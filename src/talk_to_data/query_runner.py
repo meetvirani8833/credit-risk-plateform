@@ -1,16 +1,25 @@
-"""SQL validation and execution against the read-only credit risk database.
+"""SQL validation and execution against the credit risk database.
 
 The LLM's prompt asks for safe, single-SELECT, LIMIT-bounded SQL, but a
 prompt is a request, not a guarantee. Every query is re-validated here in
-code before touching the database, and the database connection itself is
-opened read-only as a second, independent layer of defense.
+code before touching the database. Uses a SQLAlchemy engine (see
+data/db.py) so the same validation and execution code targets local SQLite
+(opened read-only at the OS level, see db.sqlite_url) and production
+Postgres (Neon) identically, only the connection string differs. On
+Postgres, read-only enforcement should additionally come from using a
+read-only DB role, that's a deployment-time setting, not something this
+code can force, so the SQL-level checks below remain the primary defense
+on both backends.
 """
 import difflib
 import re
-import sqlite3
+import sys
 from pathlib import Path
 
 import pandas as pd
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+from data.db import get_engine  # noqa: E402
 
 # Columns worth grounding: small, fixed-vocabulary categorical columns where
 # a typo'd or invented literal (e.g. 'Unemployeed' instead of 'Unemployed')
@@ -31,35 +40,38 @@ GROUNDED_COLUMNS = {
     "NAME_CLIENT_TYPE": "previous_applications",
 }
 
-_value_cache: dict[str, set[str]] = {}
+_value_cache: dict[str, dict[str, set[str]]] = {}
 
 
-def load_grounded_values(db_path: Path) -> dict[str, set[str]]:
-    """Cache the distinct real values of each column in GROUNDED_COLUMNS."""
-    global _value_cache
-    if _value_cache:
-        return _value_cache
-    conn = sqlite3.connect(f"file:{Path(db_path).as_posix()}?mode=ro", uri=True)
-    try:
+def load_grounded_values(db_url: str) -> dict[str, set[str]]:
+    """Cache the distinct real values of each column in GROUNDED_COLUMNS,
+    keyed by db_url so switching between local SQLite and production
+    Postgres in the same process (e.g. tests) doesn't mix up cached values."""
+    if db_url in _value_cache:
+        return _value_cache[db_url]
+    engine = get_engine(db_url)
+    values: dict[str, set[str]] = {}
+    with engine.connect() as conn:
         for col, table in GROUNDED_COLUMNS.items():
-            rows = conn.execute(f"SELECT DISTINCT {col} FROM {table} WHERE {col} IS NOT NULL").fetchall()
-            _value_cache[col] = {str(r[0]) for r in rows}
-    finally:
-        conn.close()
-    return _value_cache
+            rows = conn.exec_driver_sql(
+                f"SELECT DISTINCT {col} FROM {table} WHERE {col} IS NOT NULL"
+            ).fetchall()
+            values[col] = {str(r[0]) for r in rows}
+    _value_cache[db_url] = values
+    return values
 
 
-def check_value_grounding(sql: str, db_path: Path) -> str | None:
+def check_value_grounding(sql: str, db_url: str) -> str | None:
     """Return a correction hint string if the SQL filters a grounded column
     against a literal that isn't a real value, else None.
 
     Scaled-down version of an entity-resolution check: instead of a vector
     search over ambiguous entity types, this is an exact/fuzzy match against
-    a small, fully-enumerable set of known values, sqlite has none of these
-    columns above ~20 distinct values, so a cached set is enough, no
+    a small, fully-enumerable set of known values, none of these columns
+    have more than ~20 distinct values, so a cached set is enough, no
     embeddings needed.
     """
-    values_by_col = load_grounded_values(db_path)
+    values_by_col = load_grounded_values(db_url)
     for col, real_values in values_by_col.items():
         for match in re.finditer(rf"\b{col}\s*=\s*'([^']*)'", sql, re.IGNORECASE):
             literal = match.group(1)
@@ -74,6 +86,7 @@ def check_value_grounding(sql: str, db_path: Path) -> str | None:
                 hint += f" Did you mean '{suggestion[0]}'?"
             return hint
     return None
+
 
 FORBIDDEN_KEYWORDS = [
     "insert", "update", "delete", "drop", "alter", "create", "attach",
@@ -90,7 +103,7 @@ class UnsafeQueryError(Exception):
     pass
 
 
-def validate_sql(sql: str, db_path: Path | None = None) -> str:
+def validate_sql(sql: str, db_url: str | None = None) -> str:
     """Raise UnsafeQueryError if the query isn't a single, safe SELECT, or
     if it filters a known categorical column against a value that doesn't
     actually exist (see check_value_grounding).
@@ -130,8 +143,8 @@ def validate_sql(sql: str, db_path: Path | None = None) -> str:
     if unknown_tables:
         raise UnsafeQueryError(f"Query references unknown table(s): {unknown_tables}.")
 
-    if db_path is not None:
-        grounding_error = check_value_grounding(cleaned, db_path)
+    if db_url is not None:
+        grounding_error = check_value_grounding(cleaned, db_url)
         if grounding_error:
             raise UnsafeQueryError(grounding_error)
 
@@ -141,22 +154,19 @@ def validate_sql(sql: str, db_path: Path | None = None) -> str:
     return cleaned
 
 
-def execute_sql(safe_sql: str, db_path: Path) -> pd.DataFrame:
-    """Run an already-validated query against a read-only connection.
+def execute_sql(safe_sql: str, db_url: str) -> pd.DataFrame:
+    """Run an already-validated query.
 
     Split from validate_sql so the LangGraph pipeline can treat validation
     (catches bad SQL before it runs) and execution (catches runtime errors,
     e.g. valid SQL that still fails) as two separately retriable steps.
     """
-    uri = f"file:{Path(db_path).as_posix()}?mode=ro"
-    conn = sqlite3.connect(uri, uri=True)
-    try:
+    engine = get_engine(db_url)
+    with engine.connect() as conn:
         return pd.read_sql_query(safe_sql, conn)
-    finally:
-        conn.close()
 
 
-def run_query(sql: str, db_path: Path) -> pd.DataFrame:
+def run_query(sql: str, db_url: str) -> pd.DataFrame:
     """Convenience wrapper: validate then execute in one call."""
-    safe_sql = validate_sql(sql, db_path)
-    return execute_sql(safe_sql, db_path)
+    safe_sql = validate_sql(sql, db_url)
+    return execute_sql(safe_sql, db_url)

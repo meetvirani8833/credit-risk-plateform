@@ -4,11 +4,18 @@
 kaggle.json
 access_token
 
-# Data (never commit the dataset)
+# Data (never commit the full raw dataset)
 data/raw/
 data/processed/
 *.csv
 *.zip
+
+# Exception: the small, curated demo dataset IS committed on purpose, it
+# powers the public deployment (no dataset mounting available there), see
+# README section on the two data modes. A few MB, not "the dataset."
+!data/sample/
+!data/sample/*.csv
+!data/sample/*.db
 
 # Python
 __pycache__/

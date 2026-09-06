@@ -15,7 +15,6 @@ values corrupting results, handled by the schema's relationship note and by
 validate_query's value-grounding check, see query_runner.py.
 """
 import os
-from pathlib import Path
 from typing import TypedDict
 
 from dotenv import load_dotenv
@@ -45,7 +44,7 @@ class ChatState(TypedDict, total=False):
     result: "object"  # pd.DataFrame, kept loosely typed to avoid importing pandas here
     answer: str
     retries: int
-    db_path: str
+    db_url: str
 
 
 def _client() -> OpenAI:
@@ -101,7 +100,7 @@ def validate_query_node(state: ChatState) -> ChatState:
         # instead of looping the model on a query it's right to refuse.
         return {**state, "validation_error": "NO_QUERY", "retries": MAX_RETRIES + 1}
     try:
-        safe_sql = validate_sql(sql, Path(state["db_path"]))
+        safe_sql = validate_sql(sql, state["db_url"])
         return {**state, "sql": safe_sql, "validation_error": None}
     except UnsafeQueryError as e:
         return {**state, "validation_error": str(e), "retries": state.get("retries", 0) + 1}
@@ -109,7 +108,7 @@ def validate_query_node(state: ChatState) -> ChatState:
 
 def execute_query_node(state: ChatState) -> ChatState:
     try:
-        result = execute_sql(state["sql"], Path(state["db_path"]))
+        result = execute_sql(state["sql"], state["db_url"])
         return {**state, "result": result, "execution_error": None}
     except Exception as e:  # noqa: BLE001 sqlite driver errors vary
         return {**state, "execution_error": str(e), "retries": state.get("retries", 0) + 1}
@@ -177,12 +176,13 @@ def build_graph():
 
 
 class TalkToDataAgent:
-    """Thin wrapper: holds the compiled graph, the db path, and conversation
-    history across turns (kept in-process, e.g. Streamlit session_state owns
-    the actual persistence across a real user session)."""
+    """Thin wrapper: holds the compiled graph, the db connection string, and
+    conversation history across turns. In the FastAPI backend, one instance
+    is kept per session id (see api/deps.py); locally, the caller can just
+    keep one instance alive for the process lifetime."""
 
-    def __init__(self, db_path: Path):
-        self.db_path = str(db_path)
+    def __init__(self, db_url: str):
+        self.db_url = db_url
         self.graph = build_graph()
         self.history: list[dict] = []
 
@@ -190,7 +190,7 @@ class TalkToDataAgent:
         initial_state: ChatState = {
             "original_question": question,
             "conversation_history": self.history,
-            "db_path": self.db_path,
+            "db_url": self.db_url,
             "retries": 0,
         }
         final_state = self.graph.invoke(initial_state)

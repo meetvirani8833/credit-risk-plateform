@@ -1,0 +1,25 @@
+name: Keep backend warm
+
+# Pings the deployed FastAPI backend's /health endpoint on a schedule so the
+# free-tier host (Render) doesn't spin the service down after 15 minutes of
+# inactivity, avoiding a 10-60 second cold-start delay on an evaluator's
+# first request. Set the BACKEND_URL repository variable to the deployed
+# backend's base URL (Settings -> Secrets and variables -> Actions -> Variables)
+# once it's deployed.
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /health
+        run: |
+          if [ -z "${{ vars.BACKEND_URL }}" ]; then
+            echo "BACKEND_URL repository variable is not set yet, skipping."
+            exit 0
+          fi
+          curl -sf "${{ vars.BACKEND_URL }}/health" || echo "Ping failed (backend may be redeploying)."
