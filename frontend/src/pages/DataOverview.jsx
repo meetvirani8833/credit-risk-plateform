@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Card from '../components/Card'
+import ChartImage from '../components/ChartImage'
 import DecisionNotes from '../components/DecisionNotes'
 import { api } from '../lib/api'
 
@@ -55,12 +56,7 @@ export default function DataOverview() {
           <div className="flex flex-col gap-5">
             <h2 className="text-sm font-semibold text-(--color-ink)">5 business insights</h2>
             {data.insights.map((insight, i) => (
-              <Card key={i} className="flex flex-col gap-4 sm:flex-row">
-                <img
-                  src={api.chartUrl(insight.chart)}
-                  alt={insight.title}
-                  className="w-full rounded-lg border border-(--color-border) sm:w-64 sm:shrink-0"
-                />
+              <Card key={i} className="flex flex-col gap-4">
                 <div>
                   <div className="text-xs font-medium text-(--color-ink-faint)">
                     Insight {i + 1}
@@ -72,6 +68,7 @@ export default function DataOverview() {
                     {insight.summary}
                   </p>
                 </div>
+                <ChartImage src={api.chartUrl(insight.chart)} alt={insight.title} />
               </Card>
             ))}
           </div>
