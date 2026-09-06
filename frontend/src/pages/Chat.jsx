@@ -44,7 +44,11 @@ export default function Chat() {
         { role: 'assistant', text: res.answer, sql: res.sql, rewritten: res.rewritten_question },
       ])
     } catch (e) {
-      setMessages((m) => [...m, { role: 'assistant', text: `Something went wrong: ${e.message}`, error: true }])
+      const text =
+        e.status === 429
+          ? "You've hit the question limit for this demo (this keeps the shared OpenAI usage in check). Please wait a bit and try again."
+          : `Something went wrong: ${e.message}`
+      setMessages((m) => [...m, { role: 'assistant', text, error: true }])
     } finally {
       setLoading(false)
     }

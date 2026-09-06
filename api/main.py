@@ -12,11 +12,14 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_ROOT / "src"))
 
 from api.deps import EDA_FIGURES_DIR, AppState  # noqa: E402
+from api.rate_limit import limiter  # noqa: E402
 from api.routers import chat, eda, predict, rules  # noqa: E402
 from data.db import get_engine  # noqa: E402
 
@@ -28,6 +31,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Credit Risk Intelligence API", lifespan=lifespan)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # FRONTEND_ORIGIN should be set to the deployed Vercel URL in production,
 # "*" is fine for local development only.

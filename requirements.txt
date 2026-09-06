@@ -16,6 +16,7 @@ uvicorn[standard]==0.38.0
 sqlalchemy==2.0.52
 psycopg2-binary==2.9.11
 python-multipart==0.0.20
+slowapi==0.1.9
 jupytext==1.16.4
 ipykernel==6.29.5
 nbconvert==7.16.4
