@@ -65,17 +65,8 @@ export default function Chat() {
       <Card className="flex flex-col gap-4">
         <div className="flex max-h-125 min-h-40 flex-col gap-4 overflow-y-auto">
           {messages.length === 0 && (
-            <div className="flex flex-col gap-2">
-              <div className="text-xs font-medium text-(--color-ink-faint)">Try asking</div>
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => send(s)}
-                  className="w-fit rounded-full border border-(--color-border) px-3.5 py-1.5 text-left text-xs text-(--color-ink-muted) hover:border-(--color-ink-faint) hover:text-(--color-ink)"
-                >
-                  {s}
-                </button>
-              ))}
+            <div className="text-sm text-(--color-ink-faint)">
+              Ask a question below, or pick one of the examples.
             </div>
           )}
           {messages.map((m, i) => (
@@ -107,12 +98,28 @@ export default function Chat() {
           <div ref={bottomRef} />
         </div>
 
+        <div className="flex flex-wrap gap-2 border-t border-(--color-border) pt-4">
+          <span className="w-full text-xs font-medium text-(--color-ink-faint)">
+            Example questions
+          </span>
+          {SUGGESTIONS.map((s) => (
+            <button
+              key={s}
+              onClick={() => send(s)}
+              disabled={loading}
+              className="rounded-full border border-(--color-border) px-3 py-1.5 text-left text-xs text-(--color-ink-muted) hover:border-(--color-ink-faint) hover:text-(--color-ink) disabled:opacity-50"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+
         <form
           onSubmit={(e) => {
             e.preventDefault()
             send(input)
           }}
-          className="flex gap-2 border-t border-(--color-border) pt-4"
+          className="flex gap-2"
         >
           <input
             value={input}

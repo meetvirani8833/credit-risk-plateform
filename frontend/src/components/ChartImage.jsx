@@ -11,9 +11,9 @@ export default function ChartImage({ src, alt }) {
     <>
       <button
         onClick={() => setZoomed(true)}
-        className="block w-full cursor-zoom-in rounded-lg border border-(--color-border)"
+        className="block w-full cursor-zoom-in rounded-lg border border-(--color-border) bg-(--color-canvas) p-2 text-center"
       >
-        <img src={src} alt={alt} className="w-full rounded-lg" />
+        <img src={src} alt={alt} className="mx-auto max-h-80 max-w-full rounded object-contain" />
       </button>
 
       {zoomed && (
