@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Card from '../components/Card'
+import DataDictionary from '../components/DataDictionary'
 import DecisionNotes from '../components/DecisionNotes'
 import { api } from '../lib/api'
 
@@ -7,7 +8,7 @@ const SUGGESTIONS = [
   'How many applicants took cash loans versus revolving loans?',
   "What's the average income by education type?",
   'What is the default rate for applicants with a refused prior application versus those without?',
-  'How many applicants have income type Unemployed?',
+  'How many applicants have more than 2 active bureau credits?',
 ]
 
 function getSessionId() {
@@ -58,6 +59,8 @@ export default function Chat() {
           Follow-up questions keep context from earlier in this conversation.
         </p>
       </header>
+
+      <DataDictionary />
 
       <Card className="flex flex-col gap-4">
         <div className="flex max-h-125 min-h-40 flex-col gap-4 overflow-y-auto">

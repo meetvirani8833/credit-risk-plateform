@@ -10,9 +10,13 @@
   --color-canvas: #fafafa;
   --color-surface: #ffffff;
   --color-border: #e7e5e4;
+  /* ink-muted and ink-faint were originally #6b7280 / #9ca3af, the latter
+     sat at roughly 2.5:1 contrast against white, well under the 4.5:1
+     WCAG AA minimum for normal text and genuinely hard to read. Darkened
+     both while keeping the same relative hierarchy (ink > muted > faint). */
   --color-ink: #18181b;
-  --color-ink-muted: #6b7280;
-  --color-ink-faint: #9ca3af;
+  --color-ink-muted: #52525b;
+  --color-ink-faint: #71717a;
 
   --color-low: #55a868;
   --color-low-bg: #eef7f0;
