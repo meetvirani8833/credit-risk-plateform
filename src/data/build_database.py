@@ -50,11 +50,23 @@ PREVIOUS_APPLICATION_COLS = [
 ]
 
 
-def build(db_url: str | None = None, sample_rows: int | None = None):
+def build(db_url: str | None = None, sample_rows: int | None = None, large_table_row_cap: int | None = None):
     """sample_rows caps how many application rows (and their related bureau/
     previous-application rows) get loaded, used to build the small demo
     dataset committed for the public deployment, see README section on the
-    two data modes. None means the full dataset (local/Docker path)."""
+    two data modes. None means the full dataset (local/Docker path).
+
+    large_table_row_cap independently downsamples bureau_credits and
+    previous_applications (random row sample, not by applicant) while
+    keeping the applications table full. Added for Neon's free-tier 512MB
+    project storage cap: the two related tables (1.7M and 1.67M raw rows)
+    are what actually consume the space, applications alone is small.
+    Random row sampling (rather than dropping whole applicants) keeps the
+    join relationships realistic, just sparser, some applicants will have
+    fewer of their real bureau/previous records present than in the full
+    dataset, so exact query results will differ slightly from the numbers
+    validated in the README, which used the complete data.
+    """
     target_url = db_url or os.environ.get("DATABASE_URL") or sqlite_url(LOCAL_DB_PATH, read_only=False)
     engine = get_engine(target_url)
 
@@ -67,16 +79,27 @@ def build(db_url: str | None = None, sample_rows: int | None = None):
     app["AGE_YEARS"] = (-app["DAYS_BIRTH"] / 365.25).round(1)
     app["YEARS_EMPLOYED"] = (-app["DAYS_EMPLOYED"] / 365.25).where(app["DAYS_EMPLOYED"] != 365243)
     app["TARGET_LABEL"] = app["TARGET"].map({0: "Repaid", 1: "Not Repaid"})
+    # Lowercase all columns before writing: pandas.to_sql creates quoted,
+    # case-preserving column identifiers, but Postgres folds UNQUOTED
+    # identifiers in queries to lowercase, so LLM-generated SQL written as
+    # plain NAME_INCOME_TYPE (no quotes) would fail to match a stored
+    # "NAME_INCOME_TYPE" column. Storing lowercase means any unquoted
+    # reference, whatever case it's typed in, resolves correctly on both
+    # Postgres and SQLite (which is case-insensitive for this regardless).
+    app.columns = app.columns.str.lower()
     with engine.begin() as conn:
         app.to_sql("applications", conn, if_exists="replace", index=False)
     print(f"  -> applications: {len(app):,} rows")
 
-    sample_ids = set(app["SK_ID_CURR"]) if sample_rows else None
+    sample_ids = set(app["sk_id_curr"]) if sample_rows else None
 
     print("Loading bureau...")
     bureau = load_table("bureau")[BUREAU_COLS].copy()
     if sample_ids is not None:
         bureau = bureau[bureau["SK_ID_CURR"].isin(sample_ids)]
+    elif large_table_row_cap and len(bureau) > large_table_row_cap:
+        bureau = bureau.sample(n=large_table_row_cap, random_state=42)
+    bureau.columns = bureau.columns.str.lower()
     with engine.begin() as conn:
         bureau.to_sql("bureau_credits", conn, if_exists="replace", index=False)
     print(f"  -> bureau_credits: {len(bureau):,} rows")
@@ -85,17 +108,24 @@ def build(db_url: str | None = None, sample_rows: int | None = None):
     prev = load_table("previous_application")[PREVIOUS_APPLICATION_COLS].copy()
     if sample_ids is not None:
         prev = prev[prev["SK_ID_CURR"].isin(sample_ids)]
+    elif large_table_row_cap and len(prev) > large_table_row_cap:
+        prev = prev.sample(n=large_table_row_cap, random_state=42)
+    prev.columns = prev.columns.str.lower()
     with engine.begin() as conn:
         prev.to_sql("previous_applications", conn, if_exists="replace", index=False)
     print(f"  -> previous_applications: {len(prev):,} rows")
 
     with engine.begin() as conn:
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_app_sk_id ON applications (\"SK_ID_CURR\")"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_bureau_sk_id ON bureau_credits (\"SK_ID_CURR\")"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_prev_sk_id ON previous_applications (\"SK_ID_CURR\")"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_app_sk_id ON applications (sk_id_curr)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_bureau_sk_id ON bureau_credits (sk_id_curr)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_prev_sk_id ON previous_applications (sk_id_curr)"))
 
     print("\nDatabase build complete.")
 
 
 if __name__ == "__main__":
-    build()
+    # LARGE_TABLE_ROW_CAP is used for the Neon migration, to stay under its
+    # free-tier 512MB project storage limit, leave unset for the local
+    # SQLite build to load the complete dataset.
+    cap = os.environ.get("LARGE_TABLE_ROW_CAP")
+    build(large_table_row_cap=int(cap) if cap else None)
