@@ -1,0 +1,36 @@
+# Environment / secrets
+.env
+*.kaggle/
+kaggle.json
+access_token
+
+# Data (never commit the dataset)
+data/raw/
+data/processed/
+*.csv
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+*.egg-info/
+
+# Model artifacts: model.joblib IS committed on purpose, the assignment
+# requires saved model artifacts in the repo. Only ignore stray/large
+# intermediate files that show up during experimentation.
+models/*.tmp
+models/checkpoint_*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Logs
+*.log
