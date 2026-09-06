@@ -1,0 +1,13 @@
+{
+  "roc_auc": 0.7724992149710406,
+  "pr_auc": 0.26291417245191917,
+  "best_iteration": 661,
+  "scale_pos_weight": 11.386958710976838,
+  "risk_bands": {
+    "medium_cutoff": 0.49747790142528125,
+    "high_cutoff": 0.7021252333654984
+  },
+  "n_features": 85,
+  "train_rows": 246005,
+  "val_rows": 61502
+}
