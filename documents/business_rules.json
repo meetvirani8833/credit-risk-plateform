@@ -1,0 +1,81 @@
+{
+  "surrogate_fidelity_correlation": 0.393,
+  "baseline_default_rate_pct": 8.07,
+  "rules": [
+    {
+      "conditions": [
+        [
+          "EMPLOYED_YEARS",
+          ">",
+          4.516084909439087
+        ],
+        [
+          "CREDIT_TERM_YEARS",
+          "<=",
+          0.8962831199169159
+        ],
+        [
+          "CREDIT_TERM_YEARS",
+          ">",
+          0.8133994340896606
+        ]
+      ],
+      "sentence": "years employed is above 4.52 AND loan term (years) is at most 0.90 AND loan term (years) is above 0.81",
+      "caveat": "Narrow range on 'loan term (years)' (0.81 to 0.90), bounded from both sides by this single decision tree. Treat as a lower-confidence pattern worth re-checking on more data before codifying into policy, unlike the other rules here which use one wide threshold per feature.",
+      "coverage_count": 2068,
+      "coverage_pct": 3.36,
+      "actual_default_rate_pct": 1.93,
+      "risk_band": "Low"
+    },
+    {
+      "conditions": [
+        [
+          "EMPLOYED_YEARS",
+          "<=",
+          4.516084909439087
+        ],
+        [
+          "REGION_RATING_CLIENT",
+          ">",
+          1.5
+        ],
+        [
+          "CREDIT_TERM_YEARS",
+          "<=",
+          1.788087785243988
+        ]
+      ],
+      "sentence": "years employed is at most 4.52 AND region risk rating (1 best, 3 worst) is above 1.50 AND loan term (years) is at most 1.79",
+      "caveat": null,
+      "coverage_count": 14816,
+      "coverage_pct": 24.09,
+      "actual_default_rate_pct": 12.93,
+      "risk_band": "High"
+    },
+    {
+      "conditions": [
+        [
+          "EMPLOYED_YEARS",
+          ">",
+          4.516084909439087
+        ],
+        [
+          "CREDIT_TERM_YEARS",
+          ">",
+          0.8962831199169159
+        ],
+        [
+          "BUREAU_ACTIVE_CREDIT_COUNT",
+          "<=",
+          1.5
+        ]
+      ],
+      "sentence": "years employed is above 4.52 AND loan term (years) is above 0.90 AND number of active bureau credits is at most 1.50",
+      "caveat": null,
+      "coverage_count": 12334,
+      "coverage_pct": 20.05,
+      "actual_default_rate_pct": 5.21,
+      "risk_band": "Low"
+    }
+  ]
+}
