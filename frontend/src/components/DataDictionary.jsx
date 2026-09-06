@@ -42,11 +42,7 @@ export default function DataDictionary() {
       {open && (
         <div className="flex flex-col gap-4 border-t border-(--color-border) px-5 py-4">
           <p className="text-sm leading-relaxed text-(--color-ink-muted)">
-            This assistant is deliberately scoped to 3 curated tables rather than the full raw
-            dataset, a hallucination-control choice: a smaller, well-defined schema means the
-            model cannot invent a column or table that doesn't exist, and every answer traces back
-            to real, verifiable data. A question outside this scope gets an honest "I can't answer
-            that from this data," not a guess.
+            This assistant is deliberately scoped to 3 curated tables rather than the full raw dataset, a hallucination-control choice: a smaller, well-defined schema means the model cannot invent a column or table that doesn't exist, and every answer traces back to real, verifiable data. A question outside this scope gets an honest "I can't answer that from this data," not a guess.
           </p>
           {TABLES.map((t) => (
             <div key={t.name}>
