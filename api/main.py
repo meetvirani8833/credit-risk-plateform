@@ -9,7 +9,7 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -18,6 +18,7 @@ sys.path.append(str(PROJECT_ROOT / "src"))
 
 from api.deps import EDA_FIGURES_DIR, AppState  # noqa: E402
 from api.routers import chat, eda, predict, rules  # noqa: E402
+from data.db import get_engine  # noqa: E402
 
 
 @asynccontextmanager
@@ -49,6 +50,21 @@ app.include_router(chat.router)
 
 @app.get("/health")
 def health():
-    """Hit by the GitHub Actions keep-alive workflow to prevent the free-tier
-    backend from cold-starting between evaluator visits."""
+    """Hit by the keep-alive cron to prevent the free-tier backend process
+    from cold-starting between evaluator visits. Does NOT touch the
+    database, see /health/db for that."""
+    return {"status": "ok"}
+
+
+@app.get("/health/db")
+def health_db(request: Request):
+    """Runs a trivial query so the keep-alive cron can also prevent Neon's
+    free-tier compute from auto-suspending after ~5 minutes of no database
+    activity, a separate cold-start risk from Render's, pinging /health
+    alone does not touch Neon at all."""
+    from sqlalchemy import text
+
+    engine = get_engine(request.app.state.app_state.database_url)
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
     return {"status": "ok"}
