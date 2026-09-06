@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+
+  /* Quiet SaaS palette, restrained neutrals with risk-band colors as the
+     only functional accent, matching the same hex values used in the
+     matplotlib charts (documents/model_figures) for consistency across
+     the whole platform, not just within the frontend. */
+  --color-canvas: #fafafa;
+  --color-surface: #ffffff;
+  --color-border: #e7e5e4;
+  --color-ink: #18181b;
+  --color-ink-muted: #6b7280;
+  --color-ink-faint: #9ca3af;
+
+  --color-low: #55a868;
+  --color-low-bg: #eef7f0;
+  --color-medium: #dd8452;
+  --color-medium-bg: #fdf3ec;
+  --color-high: #c44e52;
+  --color-high-bg: #fbeced;
+}
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+* {
+  box-sizing: border-box;
+}
