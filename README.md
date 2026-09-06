@@ -305,4 +305,60 @@ Full output, including the 3 dropped candidate rules and why, is saved to
 
 ## 7. Known Limitations & Possible Improvements
 
-_TODO_
+**Modeling**
+- PR-AUC (0.263) is modest in absolute terms, an inherent consequence of an
+  8% base rate rather than a modeling gap, ROC-AUC and the validated risk
+  bands are the more meaningful metrics here. See section 4.
+- Feature scope stops at `application_train` plus 4 aggregated `bureau.csv`
+  features. `previous_application`, `POS_CASH_balance`,
+  `credit_card_balance`, and `installments_payments` were deliberately left
+  unaggregated (see section 3) given `EXT_SOURCE_*` already carries most of
+  the signal, but payment-history features from those tables (missed
+  installments, utilization trends) would likely add real predictive value.
+- A single stratified train/validation split was used, not k-fold cross
+  validation, so the reported metrics carry some split-specific variance
+  that CV would average out.
+- The surrogate rule tree trades fidelity for actionability on purpose
+  (0.393 correlation with the real model, see section 6), so the business
+  rules are directionally correct and validated against real outcomes, but
+  are a simplification of what the LightGBM model actually captures.
+
+**Talk-to-data**
+- Scoped to 3 curated tables (see section 5), so it cannot answer questions
+  needing `previous_application` payment history, `POS_CASH_balance`, or
+  `credit_card_balance` detail, this is a deliberate hallucination-control
+  tradeoff, not an oversight.
+- Depends on OpenAI availability, latency, and cost. Rate limiting
+  (40 requests/hour/IP, see `api/rate_limit.py`) protects the shared demo
+  key from abuse but is IP-based, not per-user, and a shared IP (office
+  NAT, VPN) would share the same budget.
+- No response caching, so identical or near-identical questions asked
+  twice both make a fresh OpenAI call.
+
+**Deployment**
+- Both Render (backend) and Vercel (frontend) run on free tiers. Render
+  free-tier instances cold-start after inactivity, mitigated with a
+  GitHub Actions cron job hitting `/health` every 10 minutes, but a
+  request during a redeploy can still briefly 404 before the new instance
+  is fully live.
+- The production Neon Postgres database caps `bureau_credits` and
+  `previous_applications` at 400,000 rows each to stay under the free
+  tier's 512MB storage limit, so cross-table chatbot answers reflect a
+  representative sample of bureau/previous-application history in
+  production, not the full table (the local Docker/SQLite path has no
+  such cap).
+- No authentication on any API endpoint, acceptable for a demo/assignment
+  but not for a real deployment handling applicant financial data.
+
+**Possible improvements given more time**
+- Aggregate `POS_CASH_balance`, `credit_card_balance`, and
+  `installments_payments` into the feature set for a likely ROC-AUC gain.
+- k-fold cross-validation and probability calibration (e.g. isotonic
+  regression) for more robust risk-band cutoffs.
+- A monotonic-constrained surrogate tree, to keep rules business-actionable
+  while improving fidelity above 0.393 without re-including opaque
+  external scores.
+- Per-user (not just per-IP) rate limiting and basic auth in front of the
+  chatbot for a production deployment.
+- A model/data drift monitoring job, since a static `model.joblib` will
+  degrade as the applicant population shifts over time.
