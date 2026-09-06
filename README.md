@@ -2,28 +2,78 @@
 
 Built for the NeoStats AI Engineer Round 1 use case, on the [Home Credit Default Risk](https://www.kaggle.com/competitions/home-credit-default-risk/data) dataset.
 
-> Status: work in progress, this README is filled in incrementally as each module is built.
+**Live deployment**: frontend at [credit-risk-plateform.vercel.app](https://credit-risk-plateform.vercel.app), backend API at [credit-risk-api-l0nw.onrender.com](https://credit-risk-api-l0nw.onrender.com). Both run on free tiers and may take a few seconds to wake up on the first request after a period of inactivity.
 
 ## 1. Architecture Overview
 
-_TODO: component diagram + description once modules are built._
+```
+                         ┌─────────────────────┐
+                         │   React SPA (Vercel) │
+                         │  5 pages: EDA,        │
+                         │  Prediction,          │
+                         │  Explainability,      │
+                         │  Rules, Chat          │
+                         └──────────┬────────────┘
+                                    │ HTTPS (fetch)
+                                    v
+                         ┌─────────────────────┐
+                         │  FastAPI backend      │
+                         │  (Render, api/)       │
+                         │  /eda /predict /rules │
+                         │  /chat (rate-limited) │
+                         └──┬────────────────┬───┘
+                            │                │
+              model.joblib  │                │  DATABASE_URL
+              + SHAP        │                │  (falls back:
+              (src/ml/)     │                │   full local db ->
+                            v                v   committed demo db)
+                    ┌───────────────┐ ┌──────────────────────┐
+                    │ LightGBM model │ │ Postgres (Neon) or    │
+                    │ + surrogate    │ │ SQLite: applications, │
+                    │ rules          │ │ bureau_credits,       │
+                    └───────────────┘ │ previous_applications │
+                                       └──────────┬────────────┘
+                                                   │
+                                       LangGraph pipeline (src/talk_to_data/):
+                                       rewrite -> generate SQL -> validate ->
+                                       execute -> summarize, via OpenAI
+```
+
+Two deployment paths, same codebase:
+- **Local / Docker**: `docker-compose up`, backend + frontend containers on your machine, SQLite by default.
+- **Production**: frontend on Vercel, backend on Render, database on Neon Postgres, exactly what the live links above run.
 
 ## 2. Setup & Run Instructions
 
-### Prerequisites
-- Docker + Docker Compose
-- An OpenAI API key (get one at https://platform.openai.com/api-keys), needed for the talk-to-data chatbot
+### Option A: Docker (recommended, matches the submission requirement)
 
-### Steps
+**Prerequisites**: Docker + Docker Compose, an OpenAI API key ([get one here](https://platform.openai.com/api-keys)).
+
 ```bash
 git clone <this-repo>
 cd credit_risk_platform
-cp .env.example .env         # then paste your OpenAI key into .env
+cp .env.example .env         # paste your OpenAI key into .env
 docker-compose up --build
 ```
-Then open http://localhost:8501 in your browser.
+Then open **http://localhost:3000** (frontend) in your browser. The backend API is at http://localhost:8000.
 
-_TODO: dataset placement instructions (evaluator must download data/raw from Kaggle, or we ship a small processed sample)._
+This works with **zero dataset setup**: the chatbot and prediction pages use a small (~4MB) committed demo dataset (`data/sample/`) by default, so the full application is usable immediately. The trained model (`models/model.joblib`) is the real one, trained on the full dataset, only the chatbot's queryable database and the prediction dropdown's sample applicants are the smaller demo set in this zero-config path.
+
+**To use the full dataset instead** (optional): download the [Home Credit Default Risk dataset](https://www.kaggle.com/competitions/home-credit-default-risk/data) into `data/raw/`, then run:
+```bash
+docker compose exec backend python -m src.data.build_database
+docker compose restart backend
+```
+This builds `data/processed/credit_risk.db` (persisted via the `./data` volume mount) from the full dataset, which the app then prefers automatically over the demo database, no code or config changes needed, see the fallback chain in `src/data/db.py`.
+
+### Option B: Run locally without Docker
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env         # paste your OpenAI key into .env
+uvicorn api.main:app --reload --port 8000       # backend
+cd frontend && npm install && npm run dev        # frontend, separate terminal
+```
 
 ## 3. Model Selection & Class Imbalance Strategy
 

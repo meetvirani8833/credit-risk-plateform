@@ -1,0 +1,28 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Overridable via .env; defaults keep the two containers talking to
+      # each other and to the browser on the host correctly out of the box.
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+    volumes:
+      # Optional: mount your own downloaded Kaggle CSVs into data/raw and
+      # run `docker compose exec backend python -m src.data.build_database`
+      # to switch the chatbot from the small committed demo dataset to the
+      # full one, see README. Works fine with nothing mounted here too,
+      # data/sample ships baked into the image.
+      - ./data:/app/data
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

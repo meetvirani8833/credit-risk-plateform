@@ -1,0 +1,13 @@
+.git
+.github
+data/raw
+data/processed
+frontend/node_modules
+frontend/dist
+notebooks/.ipynb_checkpoints
+__pycache__
+**/__pycache__
+*.pyc
+.env
+.venv
+venv
