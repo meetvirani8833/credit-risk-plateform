@@ -67,6 +67,12 @@ def build(db_url: str | None = None, sample_rows: int | None = None, large_table
     dataset, so exact query results will differ slightly from the numbers
     validated in the README, which used the complete data.
     """
+    if not db_url and not os.environ.get("DATABASE_URL"):
+        # Local SQLite path: data/processed/ is gitignored (never committed,
+        # since it holds the full dataset build), so on a fresh clone or a
+        # fresh Docker volume mount it does not exist yet. SQLite will not
+        # create missing parent directories itself, only the file.
+        LOCAL_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     target_url = db_url or os.environ.get("DATABASE_URL") or sqlite_url(LOCAL_DB_PATH, read_only=False)
     engine = get_engine(target_url)
 

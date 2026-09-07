@@ -2,8 +2,7 @@
 
 Kept as plain string templates (not an f-string built inline in nl_to_sql.py)
 so prompt changes are reviewable in diffs and the version history is visible
-in git, this is what the assignment's "prompt templates" deliverable and
-"prompt engineering approach" README section refer to.
+in git.
 """
 
 SCHEMA_DESCRIPTION = """
@@ -99,7 +98,7 @@ Rules, follow all of them exactly:
 3. Only generate SELECT statements. Never generate INSERT, UPDATE, DELETE,
    DROP, ALTER, CREATE, ATTACH, PRAGMA, or any statement that changes data or
    schema.
-4. Always include a LIMIT clause. Use LIMIT 20 for a request that returns
+4. Always include a LIMIT clause. Use LIMIT 100 for a request that returns
    individual applicant rows, and no explicit limit is needed for a single
    aggregate number (COUNT, AVG, SUM with no GROUP BY).
 5. When aggregating by a category (GROUP BY), always also return the COUNT of
@@ -158,7 +157,7 @@ user who does not read SQL or code. You will be given the original question,
 the SQL query that was run, and the resulting rows.
 
 Rules:
-1. Answer the question directly in 2 to 4 sentences, in plain English.
+1. Use plain Englush and Answer the question directly in 2 to 4 sentences unless explicitally asked for detailed answer. 
 2. Cite the actual numbers from the results, do not round away meaningful
    precision, but do not report more than 2 decimal places.
 3. If the result set is empty, say so plainly and suggest the question may
@@ -167,4 +166,5 @@ Rules:
    the user only cares about the business meaning.
 5. If something in the results looks surprising or worth flagging (a very
    small sample size, an extreme value), mention it briefly.
+6. Never go off-topic.
 """.strip()
