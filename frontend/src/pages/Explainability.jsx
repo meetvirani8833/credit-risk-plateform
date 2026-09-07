@@ -12,8 +12,8 @@ export default function Explainability() {
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-(--color-ink)">Explainability</h1>
         <p className="mt-1.5 text-sm text-(--color-ink-muted)">
-          Every prediction comes with the specific factors that drove it, computed with SHAP, not
-          a generic list of "important features" for the whole model.
+          Every prediction comes with the specific factors that drove it, computed with SHAP for
+          that individual applicant.
         </p>
       </header>
 
@@ -58,17 +58,17 @@ export default function Explainability() {
           {
             title: 'Why SHAP over a simpler method',
             detail:
-              'shap.TreeExplainer is exact (not approximated) for tree models like LightGBM: it computes, for this specific applicant, exactly how much each feature pushed the prediction away from the average, using a fast algorithm built for trees, no sampling involved.',
+              'shap.TreeExplainer computes exact Shapley values for tree models like LightGBM, using an algorithm built specifically for trees rather than a sampling-based approximation. For this specific applicant, it calculates exactly how much each feature pushed the prediction away from the average.',
           },
           {
-            title: 'Why only the top 6 features',
+            title: 'Why only the top 6 features are shown',
             detail:
-              'The model actually uses 85 features. A non-technical reviewer does not want all 85, just what mattered most for this decision, sorted by the size of their contribution.',
+              'The model uses 85 features in total. Showing all of them would not be useful for a non-technical reviewer, so only the features that mattered most for this decision are shown, sorted by the size of their contribution.',
           },
           {
             title: 'Checked against ground truth',
             detail:
-              'A known real defaulter in this public dataset scored 84% risk with low EXT_SOURCE values correctly identified as the top risk-increasing factors, in the correct direction, this was verified directly, not assumed.',
+              'A known defaulter in this public dataset scored 84% risk, with low EXT_SOURCE values correctly identified as the top risk-increasing factors in the correct direction. This was verified directly against the dataset.',
           },
         ]}
       />

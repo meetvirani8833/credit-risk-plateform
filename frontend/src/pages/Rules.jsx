@@ -20,7 +20,7 @@ export default function Rules() {
         </h1>
         <p className="mt-1.5 text-sm text-(--color-ink-muted)">
           Plain IF-THEN rules extracted from the model, each validated against real, held-out
-          outcomes, not just how clean they read.
+          outcomes.
         </p>
       </header>
 
@@ -73,14 +73,14 @@ export default function Rules() {
               'A shallow decision tree was trained to approximate the LightGBM model\'s own predictions, since the real model is an ensemble of hundreds of trees and not directly readable. Each path through that small tree becomes one rule.',
           },
           {
-            title: 'Why EXT_SOURCE scores are excluded here, despite being the strongest predictors',
+            title: 'Why EXT_SOURCE scores are excluded, despite being the strongest predictors',
             detail:
-              'They are opaque external scores the bank does not compute or control. "Your external score is low" is not policy-actionable the way "your debt-to-income ratio is high" is. This trades away some accuracy (fidelity to the real model drops from 0.689 to 0.393) for rules a credit team can actually act on.',
+              'They are opaque external scores the bank does not compute or control, so an applicant cannot be told concretely what to change, unlike a factor such as debt-to-income ratio. This reduces fidelity to the underlying model (from 0.689 to 0.393) in exchange for rules a credit team can act on directly.',
           },
           {
             title: 'Why some technically valid rules were dropped',
             detail:
-              'A rule must cover at least 3% of applicants and its actual default rate must differ from baseline by at least 2.5 percentage points, otherwise it is not really separating risk, just noise. 3 of 6 raw candidates were cut for exactly this reason.',
+              'A rule must cover at least 3% of applicants, and its actual default rate must differ from baseline by at least 2.5 percentage points, otherwise it does not meaningfully separate risk from noise. 3 of 6 raw candidates were removed on this basis.',
           },
         ]}
       />

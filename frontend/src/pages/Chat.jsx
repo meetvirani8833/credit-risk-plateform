@@ -144,14 +144,14 @@ export default function Chat() {
       <DecisionNotes
         points={[
           {
-            title: 'Why a graph, not one prompt',
+            title: 'Why a multi-step pipeline is used',
             detail:
-              'A 6-step pipeline (rewrite question, generate SQL, validate, execute, summarize, with a bounded retry loop) rather than a single LLM call. Only 3 tables are used, small enough to fit in one prompt entirely, so no schema-retrieval step is needed.',
+              'The chatbot uses a 6-step pipeline: rewrite question, generate SQL, validate, execute, summarize, with a bounded retry loop, rather than a single LLM call. Only 3 tables are used, small enough to fit entirely in one prompt, so a separate schema-retrieval step is not needed.',
           },
           {
-            title: 'Why generated SQL is shown, not hidden',
+            title: 'Why the generated SQL is shown',
             detail:
-              'Independent, code-level validation runs before any query executes: single statement, SELECT-only, a keyword blocklist, and a check that any category value the model filters on actually exists in the data. Showing the SQL makes that verifiable, not just claimed.',
+              'Independent, code-level validation runs before any query executes: single statement, SELECT-only, a keyword blocklist, and a check that any category value the model filters on actually exists in the data. Showing the SQL lets this validation be verified directly.',
           },
           {
             title: 'What happens when it cannot answer',

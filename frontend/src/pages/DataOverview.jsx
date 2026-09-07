@@ -83,14 +83,14 @@ export default function DataOverview() {
               'Each one directly informed a later build decision: the imbalance drove the model\'s class-weighting strategy, the missing-value pattern justified dropping the sparse building-metadata block, and the bureau-history finding is why bureau.csv was joined into the model at all.',
           },
           {
-            title: 'Why static charts, not live recomputation',
+            title: 'Why the charts are static',
             detail:
-              'The full dataset (307K rows across 7 tables) is not loaded into this running app, the charts are pre-generated once during EDA and served as images, keeping the deployed backend light and fast to start.',
+              'The full dataset (307K rows across 7 tables) is not loaded into this running app. The charts are pre-generated once during EDA and served as images, which keeps the deployed backend light and fast to start.',
           },
           {
-            title: 'Why report a sentinel-value bug here',
+            title: 'A data quality issue worth noting',
             detail:
-              'DAYS_EMPLOYED uses 365243 as a placeholder for "not employed" on 18% of rows. Left as-is it would tell the model these applicants have worked for 1,000 years. It is replaced with a missing value plus an explicit IS_EMPLOYED flag.',
+              'DAYS_EMPLOYED uses 365243 as a placeholder for "not employed" on 18% of rows. Left unhandled, this would tell the model these applicants have worked for 1,000 years. It is replaced with a missing value plus an explicit IS_EMPLOYED flag.',
           },
         ]}
       />

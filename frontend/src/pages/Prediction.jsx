@@ -59,15 +59,15 @@ export default function Prediction() {
           {
             title: 'Why these applicants',
             detail:
-              'A curated set of 40 held-out rows from application_test.csv, real applicants the model never trained on, spanning a realistic mix of risk levels (34 Low, 4 Medium, 2 High), rather than a hand-typed form with 30+ raw fields.',
+              'A curated set of 40 held-out rows from application_test.csv, real applicants the model never trained on, spanning a realistic mix of risk levels (34 Low, 4 Medium, 2 High). This avoids requiring a hand-typed form with 30+ raw fields.',
           },
           {
             title: 'Why LightGBM',
             detail:
-              'Handles missing values and categorical columns natively. EXT_SOURCE_1/2/3, the strongest predictors, are 20-30% missing, mean-imputing them would blunt the signal a tree model can use directly.',
+              'Handles missing values and categorical columns natively. EXT_SOURCE_1/2/3, the strongest predictors, are 20-30% missing, and mean-imputing them would blunt the signal a tree model can use directly.',
           },
           {
-            title: 'Why the risk band is percentile-based, not a fixed cutoff',
+            title: 'Why the risk band is percentile-based',
             detail:
               'With an 8% base default rate, fixed thresholds like 0.2/0.5 leave "High" almost empty. Bands are set from the top 10% / next 20% / bottom 70% of the validation score distribution, then validated against real outcomes: Low 3.8%, Medium 12.8%, High 28.6% actual default rate.',
           },
